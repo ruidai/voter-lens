@@ -51,7 +51,7 @@ export default function ChatPage() {
     const stashedCandidates = localStorage.getItem("voter_lens_candidates");
     const stashedStance = localStorage.getItem("voter_lens_stance") || "";
     
-    const candidatesList = stashedCandidates ? JSON.parse(stashedCandidates) : ["Sarah Jenkins", "David Cole"];
+    const candidatesList = stashedCandidates ? JSON.parse(stashedCandidates) : [];
     setCandidates(candidatesList);
     setVoterStance(stashedStance);
 

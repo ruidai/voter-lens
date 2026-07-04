@@ -20,10 +20,7 @@ export default function DashboardPage() {
   // Stance inputs
   const [stance, setStance] = useState("");
   const [candidateInput, setCandidateInput] = useState("");
-  const [candidates, setCandidates] = useState<string[]>([
-    "Sarah Jenkins",
-    "David Cole"
-  ]);
+  const [candidates, setCandidates] = useState<string[]>([]);
 
   // Auth banner state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -35,13 +32,73 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const parseCandidatesText = (text: string): string[] => {
+    const lines = text.split(/\r?\n/);
+    const parsedNames: string[] = [];
+
+    for (let line of lines) {
+      line = line.trim();
+      if (!line) continue;
+
+      // Remove leading bullets (•, -, *, +, ▪, ◦) and numbering (e.g. 1. or 2))
+      line = line.replace(/^[•\-*+▪◦\d+[.)\s\-*+▪◦]+/g, '').trim();
+      if (!line) continue;
+
+      const commaParts = line.split(',');
+      if (commaParts.length > 1) {
+        // Check for Last, First format (e.g. exactly 2 parts, each part is a single word)
+        const isLastFirst = commaParts.length === 2 && 
+          commaParts[0].trim().split(/\s+/).length === 1 && 
+          commaParts[1].trim().split(/\s+/).length === 1;
+
+        if (isLastFirst) {
+          const firstName = commaParts[1].trim();
+          const lastName = commaParts[0].trim();
+          parsedNames.push(`${firstName} ${lastName}`);
+        } else {
+          commaParts.forEach(part => {
+            const name = part.trim();
+            if (name) parsedNames.push(name);
+          });
+        }
+      } else {
+        parsedNames.push(line);
+      }
+    }
+
+    return Array.from(new Set(parsedNames));
+  };
+
   const addCandidate = (e: React.FormEvent) => {
     e.preventDefault();
-    const name = candidateInput.trim();
-    if (name && !candidates.includes(name)) {
-      setCandidates([...candidates, name]);
-      setCandidateInput("");
-    }
+    const text = candidateInput.trim();
+    if (!text) return;
+    
+    const parsed = parseCandidatesText(text);
+    const updated = [...candidates];
+    parsed.forEach(name => {
+      if (!updated.includes(name)) {
+        updated.push(name);
+      }
+    });
+    setCandidates(updated);
+    setCandidateInput("");
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    if (!pastedText) return;
+
+    const parsed = parseCandidatesText(pastedText);
+    const updated = [...candidates];
+    parsed.forEach(name => {
+      if (!updated.includes(name)) {
+        updated.push(name);
+      }
+    });
+    setCandidates(updated);
+    setCandidateInput("");
   };
 
   const removeCandidate = (name: string) => {
@@ -89,9 +146,9 @@ export default function DashboardPage() {
         {/* Editorial Description with Drop Cap */}
         <div className="text-sm text-news-neutral-600 leading-relaxed font-body text-justify border-b border-[#111111] pb-5">
           <p className="drop-cap">
-            As a voter, you have no time to study candidates. Do not rely on advertising campaigns. 
-            We analyze candidates' public records and stances, matching them with your policy alignments 
-            through context-tailored inquiries.
+            No time to study candidate records? Don't rely on campaign advertisements. 
+            We cross-reference public policy platforms with your core priorities to establish 
+            your alignment rating in under two minutes.
           </p>
         </div>
 
@@ -123,7 +180,17 @@ export default function DashboardPage() {
         <div className="border border-[#111111] p-5 space-y-4">
           <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#111111] border-b border-[#111111] pb-2 flex items-center justify-between">
             <span>[ SECTION A: TARGET CANDIDATES ]</span>
-            <span className="text-news-neutral-500 font-medium">Vol 1.01</span>
+            {candidates.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setCandidates([])}
+                className="text-[#CC0000] hover:underline font-bold text-[9px] tracking-widest uppercase outline-none"
+              >
+                [ Clear All ]
+              </button>
+            ) : (
+              <span className="text-news-neutral-500 font-medium">Vol 1.01</span>
+            )}
           </h2>
 
           <button
@@ -140,6 +207,7 @@ export default function DashboardPage() {
               placeholder="TYPE CANDIDATE (E.G. JANE DOE)"
               value={candidateInput}
               onChange={(e) => setCandidateInput(e.target.value)}
+              onPaste={handlePaste}
               className="flex-1 px-3 py-2 bg-transparent text-[#111111] border border-[#111111] text-xs font-mono focus:outline-none focus:bg-[#E5E5E0]/40 transition-all uppercase"
             />
             <button
