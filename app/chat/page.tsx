@@ -55,84 +55,38 @@ export default function ChatPage() {
     setCandidates(candidatesList);
     setVoterStance(stashedStance);
 
-    setTimeout(() => {
-      const baseQuestions: Question[] = [
-        {
-          id: "q1",
-          category: "Education",
-          text: "How should our district allocate funding for charter schools and alternative options?",
-          options: [
-            "Prioritize choice and fund charter vouchers heavily",
-            "Increase funding exclusively for public district school systems",
-            "Maintain current balance with strong performance auditing"
-          ],
-          candidateStances: {
-            "Sarah Jenkins": "Maintain current balance with strong performance auditing",
-            "David Cole": "Prioritize choice and fund charter vouchers heavily"
-          }
-        },
-        {
-          id: "q2",
-          category: "Fiscal Management",
-          text: "What is your stance on regional sales tax increases for infrastructure projects (e.g. Prop 479)?",
-          options: [
-            "Support to fund transit, highway and road safety improvements",
-            "Oppose to lower property/sales taxes and reduce capital borrowing",
-            "Support, but only if matched by equal spending cuts elsewhere"
-          ],
-          candidateStances: {
-            "Sarah Jenkins": "Support to fund transit, highway and road safety improvements",
-            "David Cole": "Oppose to lower property/sales taxes and reduce capital borrowing"
-          }
-        },
-        {
-          id: "q3",
-          category: "Local Governance",
-          text: "Which model of resource allocation fits your goals for public utilities and water management?",
-          options: [
-            "Heavy environmental preservation regulations on municipal pools",
-            "Industrial growth focus to secure jobs and cheap supply access",
-            "Balanced conservation with community water audits"
-          ],
-          candidateStances: {
-            "Sarah Jenkins": "Heavy environmental preservation regulations on municipal pools",
-            "David Cole": "Industrial growth focus to secure jobs and cheap supply access"
-          }
+    const fetchQuestions = async () => {
+      try {
+        if (!candidatesList || candidatesList.length === 0) {
+          setLoading(false);
+          return;
         }
-      ];
 
-      let filtered = [...baseQuestions];
-      const stanceLower = stashedStance.toLowerCase();
-      const initialAnswers: Record<string, number> = {};
-      
-      if (stanceLower.includes("choice") || stanceLower.includes("charter")) {
-        initialAnswers["q1"] = 0;
-      }
-      if (stanceLower.includes("tax") || stanceLower.includes("freeway")) {
-        if (stanceLower.includes("oppose") || stanceLower.includes("lower")) {
-          initialAnswers["q2"] = 1;
+        const res = await fetch("/api/align", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidates: candidatesList, stance: stashedStance })
+        });
+        
+        if (!res.ok) throw new Error("Failed to fetch questions");
+        
+        const data = await res.json();
+        setQuestions(data);
+        setAnswers({});
+        
+        if (data.length === 0) {
+          setShowResults(true);
         } else {
-          initialAnswers["q2"] = 0;
+          setCurrentIdx(0);
         }
+      } catch (err) {
+        console.error("Error fetching questions:", err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setAnswers(initialAnswers);
-      setQuestions(filtered);
-      
-      let startIdx = 0;
-      while (filtered[startIdx] && initialAnswers[filtered[startIdx].id] !== undefined) {
-        startIdx++;
-      }
-      
-      if (startIdx >= filtered.length) {
-        setCurrentIdx(filtered.length - 1);
-        setShowResults(true);
-      } else {
-        setCurrentIdx(startIdx);
-      }
-      
-      setLoading(false);
-    }, 1200);
+    fetchQuestions();
   }, []);
 
   const handleSelectOption = (qId: string, optIdx: number) => {
