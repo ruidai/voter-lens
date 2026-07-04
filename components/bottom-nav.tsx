@@ -25,20 +25,20 @@ export default function BottomNav() {
       icon: Camera,
     },
     {
-      label: "Chat",
+      label: "Align",
       href: "/chat",
       icon: MessageSquare,
     },
     {
       label: "Profile",
-      href: "/login", // Redirect to login as auth placeholder
+      href: "/login",
       icon: User,
     },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 shadow-lg">
-      <div className="max-w-md mx-auto flex justify-around items-center h-16 px-4">
+    <nav className="absolute bottom-0 left-0 right-0 z-40 bg-[#E0E5EC] border-t border-white/10 shadow-[-5px_-5px_10px_rgba(255,255,255,0.4),5px_5px_10px_rgba(163,177,198,0.3)]">
+      <div className="flex justify-around items-center h-20 px-4">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -47,18 +47,18 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center justify-center flex-1 h-full py-1 text-center transition-colors focus:outline-none"
+              className="flex flex-col items-center justify-center flex-1 h-full py-1 text-center focus:outline-none"
             >
               <div
                 className={clsx(
-                  "flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-200",
+                  "flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300",
                   isActive
-                    ? "text-voter-blue-500 bg-voter-blue-50 dark:bg-voter-blue-700/10 scale-105"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                    ? "text-[#6C63FF] shadow-[inset_4px_4px_8px_rgba(163,177,198,0.5),inset_-4px_-4px_8px_rgba(255,255,255,0.6)] scale-[0.96]"
+                    : "text-[#6B7280] shadow-[5px_5px_10px_rgba(163,177,198,0.3),-5px_-5px_10px_rgba(255,255,255,0.4)] hover:text-[#3D4852] active:scale-[0.98]"
                 )}
               >
-                <Icon className="w-6 h-6" />
-                <span className="text-[10px] font-medium mt-1">{item.label}</span>
+                <Icon className="w-5.5 h-5.5" />
+                <span className="text-[9px] font-bold mt-1 uppercase tracking-wider scale-90">{item.label}</span>
               </div>
             </Link>
           );

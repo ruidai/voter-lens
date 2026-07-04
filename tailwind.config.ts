@@ -6,26 +6,31 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: "media", // Respects browser dark mode if custom dark shades are needed
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        voter: {
-          blue: {
-            50: "#f0f7ff",
-            100: "#e0efff",
-            500: "#2563eb",
-            600: "#1d4ed8",
-            700: "#1e40af",
-          },
-          green: {
-            50: "#f0fdf4",
-            100: "#dcfce7",
-            500: "#22c55e",
-            600: "#16a34a",
-          }
+        neu: {
+          bg: "#E0E5EC",
+          text: "#3D4852",
+          muted: "#6B7280",
+          accent: "#6C63FF",
+          "accent-light": "#8B84FF",
+          "accent-sec": "#38B2AC",
         }
+      },
+      boxShadow: {
+        // Soft UI Shadow Physics
+        extruded: "9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)",
+        "extruded-hover": "12px 12px 20px rgba(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)",
+        "extruded-sm": "5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)",
+        "inset-shallow": "inset 6px 6px 10px rgba(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)",
+        "inset-deep": "inset 10px 10px 20px rgba(163,177,198,0.7), inset -10px -10px 20px rgba(255,255,255,0.6)",
+        "inset-sm": "inset 3px 3px 6px rgba(163,177,198,0.6), inset -3px -3px 6px rgba(255,255,255,0.5)",
+      },
+      fontFamily: {
+        display: ["var(--font-display)", "sans-serif"],
+        sans: ["var(--font-sans)", "sans-serif"],
       },
     },
   },

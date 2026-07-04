@@ -1,21 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0b0f19;
-    --foreground: #f1f5f9;
+    --font-sans: 'DM Sans', sans-serif;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  body {
+    background-color: #E0E5EC;
+    color: #3D4852;
+    font-family: var(--font-sans);
   }
 }
 
-body {
-  color: var(--foreground);
-  background-color: var(--background);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+/* Neumorphic transitions & floating ambient animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Custom scrollbars matching cool clay style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #E0E5EC;
+  box-shadow: inset 2px 2px 5px rgba(163,177,198,0.5), inset -2px -2px 5px rgba(255,255,255,0.5);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C4CCD4;
+  border-radius: 9999px;
+  box-shadow: 2px 2px 4px rgba(163,177,198,0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B3BDC8;
 }
