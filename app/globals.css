@@ -1,54 +1,100 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Lora:ital,wght@0,400;0,600;1,400&display=block');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --font-sans: 'DM Sans', sans-serif;
-    --font-display: 'Plus Jakarta Sans', sans-serif;
+  /* Absolute sharp corners constraint */
+  *, *::before, *::after {
+    border-radius: 0px !important;
   }
 
   body {
-    background-color: #E0E5EC;
-    color: #3D4852;
-    font-family: var(--font-sans);
+    background-color: #F9F9F7;
+    color: #111111;
+    font-family: 'Lora', Georgia, serif;
+    /* Newsprint Dot Grid Pattern */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23111111' fill-opacity='0.04' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E");
   }
 }
 
-/* Neumorphic transitions & floating ambient animations */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
+/* 2px solid offset border system for collapsed grids */
+.border-collapse-grid > * {
+  margin-right: -1px;
+  margin-bottom: -1px;
+}
+
+/* Newspaper editorial textures */
+.newsprint-texture {
+  position: relative;
+}
+
+.newsprint-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(0deg, transparent 98%, rgba(17,17,17,0.015) 100%),
+    linear-gradient(90deg, transparent 98%, rgba(17,17,17,0.015) 100%);
+  background-size: 4px 4px;
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 1;
+}
+
+/* Editorial Drop Caps */
+.drop-cap::first-letter {
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+  font-size: 4.5rem;
+  float: left;
+  line-height: 0.85;
+  padding-top: 4px;
+  margin-right: 8px;
+  font-weight: 900;
+  color: #111111;
+}
+
+/* Hard Cutout Shadow physics */
+.hard-shadow {
+  box-shadow: 4px 4px 0px 0px #111111;
+}
+
+.hard-shadow-hover {
+  transition: all 0.15s ease-out;
+}
+
+.hard-shadow-hover:hover {
+  box-shadow: 4px 4px 0px 0px #111111;
+  transform: translate(-2px, -2px);
+}
+
+.hard-shadow-hover:active {
+  box-shadow: 1px 1px 0px 0px #111111;
+  transform: translate(1px, 1px);
+}
+
+/* Stock News Ticker Marquee Keyframes */
+@keyframes ticker {
+  0% {
+    transform: translate3d(0, 0, 0);
   }
-  50% {
-    transform: translateY(-8px);
+  100% {
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+.ticker-wrap {
+  overflow: hidden;
+  width: 100%;
 }
 
-/* Custom scrollbars matching cool clay style */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.ticker-content {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ticker 25s linear infinite;
 }
 
-::-webkit-scrollbar-track {
-  background: #E0E5EC;
-  box-shadow: inset 2px 2px 5px rgba(163,177,198,0.5), inset -2px -2px 5px rgba(255,255,255,0.5);
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #C4CCD4;
-  border-radius: 9999px;
-  box-shadow: 2px 2px 4px rgba(163,177,198,0.3);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #B3BDC8;
+.ticker-content:hover {
+  animation-play-state: paused;
 }

@@ -13,7 +13,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Real implementation would call supabase.auth.signInWithPassword()
     setTimeout(() => {
       setLoading(false);
       window.location.href = "/dashboard";
@@ -21,47 +20,47 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-between p-6 bg-white dark:bg-slate-900">
-      <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
-        {/* Logo and Header */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-blue-600/10 dark:bg-blue-500/10 rounded-3xl flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-            <Vote className="w-9 h-9" />
+    <div className="flex-1 flex flex-col justify-between p-6 bg-[#F9F9F7] text-[#111111]">
+      <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-6">
+        {/* Newspaper styled Header */}
+        <div className="flex flex-col items-center border-b border-[#111111] pb-6 text-center space-y-2">
+          <div className="w-12 h-12 border border-[#111111] flex items-center justify-center text-[#111111] bg-white">
+            <Vote className="w-6 h-6 text-[#CC0000]" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Welcome back
+          <h1 className="text-xl font-extrabold tracking-tight text-[#111111] font-display uppercase">
+            MEMBER SECURE SIGN IN
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2">
-            Log in to manage your voter profile & track registration.
+          <p className="text-[10px] text-news-neutral-500 font-mono uppercase font-bold">
+            Edition Log // Vol 1.05
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+        {/* Input Fields */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1">
             <label
               htmlFor="email"
-              className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1"
+              className="block text-[9px] font-mono font-bold uppercase tracking-widest text-[#111111]"
             >
-              Email Address
+              EMAIL ADDRESS LOG
             </label>
             <input
               id="email"
               type="email"
-              placeholder="name@domain.com"
+              placeholder="NAME@DOMAIN.COM"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full border-b-2 border-[#111111] bg-transparent px-3 py-2 font-mono text-xs text-[#111111] focus:bg-news-neutral-100 focus:outline-none uppercase"
             />
           </div>
 
-          <div>
+          <div className="space-y-1">
             <label
               htmlFor="password"
-              className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1"
+              className="block text-[9px] font-mono font-bold uppercase tracking-widest text-[#111111]"
             >
-              Password
+              SECRET ACCESS KEY
             </label>
             <div className="relative">
               <input
@@ -71,17 +70,17 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 pr-11 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full border-b-2 border-[#111111] bg-transparent px-3 py-2 pr-10 font-mono text-xs text-[#111111] focus:bg-news-neutral-100 focus:outline-none uppercase"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-news-neutral-500 hover:text-[#111111]"
               >
                 {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
+                  <EyeOff className="w-4 h-4" />
                 ) : (
-                  <Eye className="w-5 h-5" />
+                  <Eye className="w-4 h-4" />
                 )}
               </button>
             </div>
@@ -90,32 +89,30 @@ export default function LoginPage() {
           <div className="text-right">
             <Link
               href="#"
-              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#111111] underline hover:text-[#CC0000]"
             >
-              Forgot password?
+              RESET KEY?
             </Link>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/10 hover:shadow-blue-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full py-4 bg-[#111111] hover:bg-[#CC0000] text-[#F9F9F7] text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 outline-none disabled:opacity-40"
           >
-            {loading ? "Logging in..." : "Log In"}
+            {loading ? "AUTHENTICATING..." : "CONFIRM & LOG IN"}
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
       </div>
 
-      <div className="mt-8 text-center text-sm">
-        <span className="text-slate-500 dark:text-slate-400">
-          Don't have an account?{" "}
-        </span>
+      <div className="mt-8 text-center text-xs">
+        <span className="text-news-neutral-600 font-body">New reader? </span>
         <Link
           href="/signup"
-          className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+          className="font-bold text-[#111111] underline hover:text-[#CC0000] uppercase tracking-wider text-[10px] font-sans"
         >
-          Sign up
+          Create Log Account
         </Link>
       </div>
     </div>
