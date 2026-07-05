@@ -43,13 +43,37 @@ export async function POST(req: NextRequest) {
           
           sendEvent({ type: "status", message: "Initializing alignment check...", progress: 5 });
 
+          let canonicalLocation = location || '';
+          if (location) {
+            sendEvent({ type: "status", message: "Resolving geographic context...", progress: 6 });
+            try {
+              const { object } = await generateObject({
+                model: google("gemini-1.5-flash"),
+                schema: z.object({
+                  resolvedLocation: z.string().describe("The standardized geographic format like 'County, State' or 'City, State' or 'State' or empty string if invalid.")
+                }),
+                prompt: `Standardize this location input into a canonical geographic format (e.g., 'County, State', 'City, State', or 'State'). If it is a zip code, resolve it to its county and state. If blank or nonsensical, return empty string.\n\nUser Input: ${location}`
+              });
+              
+              canonicalLocation = object.resolvedLocation;
+              
+              await supabase.from("llm_logs").insert({
+                context: "entity_resolution_location",
+                prompt: `Resolve location: ${location}`,
+                response: canonicalLocation
+              });
+            } catch (e) {
+              console.error("Entity resolution failed", e);
+            }
+          }
+
           for (let i = 0; i < candidates.length; i++) {
             const candidateName = candidates[i];
             const progressBase = 5 + (i / totalCandidates) * 60; // 5% to 65% for research
             sendEvent({ type: "status", message: `Analyzing ${candidateName}...`, progress: Math.round(progressBase) });
 
             const { data: profiles, error } = await supabase
-              .rpc("match_candidate", { search_name: candidateName, search_location: location || '', match_threshold: 0.4 });
+              .rpc("match_candidate", { search_name: candidateName, search_location: canonicalLocation, match_threshold: 0.4 });
 
             const profile = profiles && profiles.length > 0 ? profiles[0] : null;
             const now = Date.now();
@@ -76,7 +100,7 @@ export async function POST(req: NextRequest) {
               sendEvent({ type: "status", message: `Compiling dossier for ${canonicalName}...`, progress: Math.round(progressBase + 5) });
               sendEvent({ type: "research_start", candidate: canonicalName });
               
-              let locationContext = location ? ` running in ${location}` : '';
+              let locationContext = canonicalLocation ? ` running in ${canonicalLocation}` : '';
               let researchPrompt = `Research and provide a detailed, highly factual political platform dossier for the candidate: ${canonicalName}${locationContext}. Include their stances on major issues like Economy, Healthcare, Education, and Environment. Ensure the tone is objective and non-partisan.`;
               if (existingDossier) {
                  researchPrompt = `Here is the existing dossier for the candidate ${canonicalName}: \n\n"${existingDossier}"\n\nResearch and provide an UPDATED dossier. Keep all the accurate historical information, but strictly ADD any new developments or shifts in their platform from the last 3 months.`;
@@ -103,7 +127,7 @@ export async function POST(req: NextRequest) {
                 .from("candidate_profiles")
                 .upsert({
                   name: canonicalName,
-                  location: location || '',
+                  location: canonicalLocation,
                   dossier: newDossier,
                   last_updated_at: new Date().toISOString()
                 }, { onConflict: 'name, location' });
