@@ -12,7 +12,10 @@ import {
   RotateCcw,
   BookOpen,
   ArrowLeft,
-  Filter
+  Filter,
+  Activity,
+  Cpu,
+  TerminalSquare
 } from "lucide-react";
 
 interface Question {
@@ -56,32 +59,17 @@ export default function ChatPage() {
   
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStepIdx, setLoadingStepIdx] = useState(0);
+  const [loadingStep, setLoadingStep] = useState("Initializing audit...");
+  const [aiSubject, setAiSubject] = useState("");
+  const [aiText, setAiText] = useState("");
+  
   const [showResults, setShowResults] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [progressSaved, setProgressSaved] = useState(false);
 
-  useEffect(() => {
-    if (!loading) return;
-    
-    const progressInterval = setInterval(() => {
-      setLoadingProgress(prev => {
-        if (prev >= 95) return prev;
-        return prev + 1;
-      });
-    }, 50);
-
-    const stepInterval = setInterval(() => {
-      setLoadingStepIdx(prev => Math.min(prev + 1, LOADING_STEPS.length - 1));
-    }, 1500);
-
-    return () => {
-      clearInterval(progressInterval);
-      clearInterval(stepInterval);
-    };
-  }, [loading]);
+  // No more fake intervals needed. We rely on stream events.
 
   useEffect(() => {
     const stashedCandidates = localStorage.getItem("voter_lens_candidates");
@@ -104,25 +92,56 @@ export default function ChatPage() {
           body: JSON.stringify({ candidates: candidatesList, stance: stashedStance })
         });
         
-        if (!res.ok) throw new Error("Failed to fetch questions");
+        if (!res.ok) throw new Error("Failed to start alignment audit");
+        if (!res.body) throw new Error("No response body");
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
         
-        const data = await res.json();
-        
-        setLoadingProgress(100);
-        
-        setTimeout(() => {
-          setQuestions(data.questions || []);
-          setEliminatedTopics(data.eliminatedTopics || []);
-          setAnswers({});
-          
-          if (!data.questions || data.questions.length === 0) {
-            setShowResults(true);
-          } else {
-            setCurrentIdx(0);
+        let done = false;
+        let buffer = "";
+
+        while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+          if (value) {
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n");
+            buffer = parts.pop() || "";
+            for (const part of parts) {
+              if (part.trim() === "") continue;
+              try {
+                const event = JSON.parse(part);
+                if (event.type === "status") {
+                  setLoadingProgress(event.progress);
+                  setLoadingStep(event.message);
+                } else if (event.type === "research_start") {
+                  setAiSubject(event.candidate);
+                  setAiText("");
+                } else if (event.type === "research_chunk") {
+                  setAiText(prev => prev + event.chunk);
+                } else if (event.type === "result") {
+                  setTimeout(() => {
+                    setQuestions(event.data.questions || []);
+                    setEliminatedTopics(event.data.eliminatedTopics || []);
+                    setAnswers({});
+                    
+                    if (!event.data.questions || event.data.questions.length === 0) {
+                      setShowResults(true);
+                    } else {
+                      setCurrentIdx(0);
+                    }
+                    setLoading(false);
+                  }, 800);
+                } else if (event.type === "error") {
+                  throw new Error(event.message);
+                }
+              } catch (e) {
+                console.error("Error parsing stream part", part, e);
+              }
+            }
           }
-          setLoading(false);
-        }, 500);
-        
+        }
       } catch (err) {
         console.error("Error fetching questions:", err);
         setLoading(false);
@@ -208,13 +227,15 @@ export default function ChatPage() {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#F9F9F7] text-[#111111] p-6 space-y-8 min-h-screen pb-32">
-        <div className="w-16 h-16 border-2 border-[#111111] relative flex items-center justify-center bg-white text-[#CC0000] animate-pulse shadow-[4px_4px_0_0_rgba(17,17,17,1)]">
-          <Sparkles className="w-7 h-7 fill-current" />
+        <div className="w-16 h-16 border-2 border-[#111111] relative flex items-center justify-center bg-white text-[#CC0000] shadow-[4px_4px_0_0_rgba(17,17,17,1)] overflow-hidden">
+          <Activity className="w-7 h-7 animate-pulse text-[#CC0000]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#CC0000]/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
         </div>
         
         <div className="w-full max-w-sm space-y-4">
           <div className="flex justify-between items-end">
-            <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#111111]">
+            <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#111111] flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-[#CC0000] animate-spin-slow" style={{ animationDuration: '3s' }} />
               COMPOSING AUDIT
             </h2>
             <span className="text-[10px] font-mono font-bold text-news-neutral-500">
@@ -225,16 +246,32 @@ export default function ChatPage() {
           {/* Flat Editorial Progress Bar */}
           <div className="w-full h-3 border border-[#111111] bg-white overflow-hidden p-[1px]">
             <div 
-              className="h-full bg-[#111111] transition-all duration-100 ease-linear"
+              className="h-full bg-[#111111] transition-all duration-300 ease-out"
               style={{ width: `${loadingProgress}%` }}
             />
           </div>
 
-          <div className="h-8 flex items-center justify-center">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-news-neutral-600 animate-in fade-in slide-in-from-bottom-2 duration-300" key={loadingStepIdx}>
-              {LOADING_STEPS[loadingStepIdx]}
+          <div className="h-6 flex items-center justify-between border-b border-dashed border-news-neutral-300 pb-2">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-news-neutral-600 animate-pulse">
+              {loadingStep}
             </p>
           </div>
+          
+          {/* Realtime AI output block */}
+          {aiSubject && (
+            <div className="bg-[#111111] border border-[#111111] text-[#F9F9F7] p-3 shadow-[4px_4px_0_0_rgba(204,0,0,1)] animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center gap-2 mb-2 border-b border-[#F9F9F7]/20 pb-2">
+                <TerminalSquare className="w-3.5 h-3.5 text-[#CC0000]" />
+                <span className="text-[9px] font-mono font-bold text-[#CC0000] tracking-widest uppercase">
+                  AGENT LOG: {aiSubject}
+                </span>
+              </div>
+              <div className="font-mono text-[10px] text-news-neutral-300 h-24 overflow-y-auto whitespace-pre-wrap leading-relaxed custom-scrollbar break-words">
+                {aiText}
+                <span className="inline-block w-1.5 h-3 bg-[#CC0000] ml-1 animate-pulse" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

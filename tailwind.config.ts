@@ -30,6 +30,15 @@ const config: Config = {
         sans: ["'Inter'", "'Helvetica Neue'", "sans-serif"],
         mono: ["'JetBrains Mono'", "'Courier New'", "monospace"],
       },
+      keyframes: {
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' }
+        }
+      },
+      animation: {
+        'spin-slow': 'spin 3s linear infinite',
+        'shimmer': 'shimmer 2s infinite'
+      }
     },
   },
   plugins: [],
