@@ -212,7 +212,7 @@ export default function DashboardPage() {
               href="/login" 
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111111] text-[#F9F9F7] text-[10px] font-bold uppercase tracking-widest hover:bg-[#CC0000] transition-colors shadow-[2px_2px_0_0_rgba(17,17,17,0.3)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
             >
-              Secure Your Profile
+              Save Your Profile
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>

@@ -39,7 +39,7 @@ export default function LoginPage() {
             <Vote className="w-6 h-6 text-[#CC0000]" />
           </div>
           <h1 className="text-xl font-extrabold tracking-tight text-[#111111] font-display uppercase">
-            MEMBER SECURE SIGN IN
+            MEMBER SIGN IN
           </h1>
           <p className="text-[10px] text-news-neutral-500 font-mono uppercase font-bold">
             Log in to automatically save and enrich your comprehensive political profile.
@@ -142,7 +142,7 @@ export default function LoginPage() {
           href="/signup"
           className="font-bold text-[#111111] underline hover:text-[#CC0000] uppercase tracking-wider text-[10px] font-sans"
         >
-          Create Log Account
+          Create Account
         </Link>
       </div>
     </div>
