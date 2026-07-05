@@ -42,7 +42,7 @@ export default function LoginPage() {
             MEMBER SECURE SIGN IN
           </h1>
           <p className="text-[10px] text-news-neutral-500 font-mono uppercase font-bold">
-            Edition Log // Vol 1.05
+            Log in to automatically save and enrich your comprehensive political profile.
           </p>
         </div>
 

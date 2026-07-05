@@ -26,10 +26,30 @@ export default function DashboardPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const savedUrl = localStorage.getItem("supabase_url");
-    if (savedUrl) {
-      setIsLoggedIn(true);
-    }
+    // Check if user is logged in by making a request to the profile endpoint
+    // This implicitly checks the secure http-only cookie rather than relying on local storage
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const data = await res.json();
+          setIsLoggedIn(true);
+          if (data.profile?.voter_stance) {
+            setStance(data.profile.voter_stance);
+          }
+        } else {
+          setIsLoggedIn(false);
+          const savedLocalStance = localStorage.getItem("voter_lens_stance");
+          if (savedLocalStance) setStance(savedLocalStance);
+        }
+      } catch (e) {
+        setIsLoggedIn(false);
+        const savedLocalStance = localStorage.getItem("voter_lens_stance");
+        if (savedLocalStance) setStance(savedLocalStance);
+      }
+    };
+    
+    fetchProfile();
   }, []);
 
   const parseCandidatesText = (text: string): string[] => {
@@ -153,26 +173,53 @@ export default function DashboardPage() {
         </div>
 
         {/* Auth incentive Box styled as an Editorial Ad */}
-        {!isLoggedIn && (
-          <div className="border-2 border-[#111111] p-4 bg-[#F9F9F7] space-y-3 relative overflow-hidden">
+        {!isLoggedIn ? (
+          <div className="border-2 border-[#111111] p-4 bg-[#F9F9F7] space-y-3 relative overflow-hidden shadow-[4px_4px_0_0_rgba(17,17,17,1)]">
             <div className="absolute top-0 right-0 bg-[#CC0000] text-[#F9F9F7] text-[8px] font-mono font-bold tracking-widest uppercase px-2 py-0.5">
               ADVERTISEMENT
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 pr-12">
               <h3 className="text-xs font-bold font-sans uppercase tracking-wider text-[#111111]">
-                🔒 Preserve Your Alignment Index
+                🧠 A Smarter Political Profile
               </h3>
               <p className="text-[11px] text-news-neutral-600 leading-normal">
-                An anonymous profile can lose match progress. Register to secure your stances safely.
+                Your political context grows smarter with every alignment check. <strong className="text-[#111111]">Log in</strong> to sync your profile automatically. 
+                Don't want to log in? <strong className="text-[#111111]">No pressure.</strong> You can easily copy your portable profile at the end of each session and paste it below next time.
               </p>
             </div>
             <Link 
               href="/login" 
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111111] text-[#F9F9F7] text-[10px] font-bold uppercase tracking-widest hover:bg-[#CC0000] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111111] text-[#F9F9F7] text-[10px] font-bold uppercase tracking-widest hover:bg-[#CC0000] transition-colors shadow-[2px_2px_0_0_rgba(17,17,17,0.3)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
             >
-              Sign Up Now
+              Secure Your Profile
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
+          </div>
+        ) : (
+          <div className="border border-[#111111] p-4 bg-[#E5E5E0]/40 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#111111] text-[#F9F9F7] flex items-center justify-center font-bold text-xs uppercase font-mono">
+                ✓
+              </div>
+              <div>
+                <h3 className="text-xs font-bold font-sans uppercase tracking-wider text-[#111111]">
+                  SECURE PROFILE ACTIVE
+                </h3>
+                <p className="text-[10px] text-news-neutral-600 leading-normal font-mono uppercase tracking-wide">
+                  YOUR CONTEXT IS SYNCED
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={async () => {
+                await fetch("/auth/signout", { method: "POST" });
+                setIsLoggedIn(false);
+                setStance("");
+              }}
+              className="text-[9px] font-mono uppercase tracking-widest text-news-neutral-500 hover:text-[#CC0000] underline"
+            >
+              Sign Out
+            </button>
           </div>
         )}
 
@@ -247,7 +294,7 @@ export default function DashboardPage() {
             <span className="text-news-neutral-500 font-medium">Vol 1.02</span>
           </h2>
           <p className="text-[11px] text-news-neutral-600 leading-relaxed font-body">
-            Describe your political alignment or policy views. Gemini will examine candidate records and filter questions matching these views.
+            Describe your political alignment or policy views. <strong className="text-[#111111]">Paste your previously copied Portable Profile here</strong> to restore your full context, or just type a few issues you care about.
           </p>
 
           <textarea

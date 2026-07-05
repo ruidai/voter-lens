@@ -59,15 +59,16 @@ export default function ChatPage() {
   
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStep, setLoadingStep] = useState("Initializing audit...");
+  const [loadingStep, setLoadingStep] = useState("Initializing alignment check...");
   const [aiSubject, setAiSubject] = useState("");
   const [aiText, setAiText] = useState("");
   
   const [showResults, setShowResults] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [progressSaved, setProgressSaved] = useState(false);
+  const [portableProfile, setPortableProfile] = useState<string | null>(null);
+  const [isGeneratingProfile, setIsGeneratingProfile] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // No more fake intervals needed. We rely on stream events.
 
@@ -92,7 +93,7 @@ export default function ChatPage() {
           body: JSON.stringify({ candidates: candidatesList, stance: stashedStance })
         });
         
-        if (!res.ok) throw new Error("Failed to start alignment audit");
+        if (!res.ok) throw new Error("Failed to start alignment check");
         if (!res.body) throw new Error("No response body");
 
         const reader = res.body.getReader();
@@ -158,6 +159,40 @@ export default function ChatPage() {
     }));
   };
 
+  const generatePortableProfile = async (currentQuestions: Question[], currentAnswers: Record<string, number>, currentEliminated: EliminatedTopic[]) => {
+    setIsGeneratingProfile(true);
+    try {
+      const res = await fetch("/api/profile/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          previousStance: voterStance,
+          questions: currentQuestions,
+          answers: currentAnswers,
+          eliminatedTopics: currentEliminated
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPortableProfile(data.stance);
+        
+        // Auto-save for anonymous users on this device
+        localStorage.setItem("voter_lens_stance", data.stance);
+
+        // Attempt to auto-save if logged in
+        await fetch("/api/profile/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stance: data.stance })
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGeneratingProfile(false);
+    }
+  };
+
   const handleNext = () => {
     setFreeTextAnswer("");
     setIsTransitioning(true);
@@ -167,6 +202,7 @@ export default function ChatPage() {
         setCurrentIdx(currentIdx + 1);
       } else {
         setShowResults(true);
+        generatePortableProfile(questions, answers, eliminatedTopics);
       }
       setIsTransitioning(false);
     }, 300);
@@ -176,7 +212,8 @@ export default function ChatPage() {
     setAnswers({});
     setCurrentIdx(0);
     setShowResults(false);
-    setProgressSaved(false);
+    setPortableProfile(null);
+    setCopied(false);
     window.location.reload();
   };
 
@@ -219,9 +256,12 @@ export default function ChatPage() {
   const alignments = getAlignments();
   const currentQuestion = questions[currentIdx];
 
-  const triggerAuth = (provider: string) => {
-    setProgressSaved(true);
-    setShowLoginModal(false);
+  const handleCopy = () => {
+    if (portableProfile) {
+      navigator.clipboard.writeText(portableProfile);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   if (loading) {
@@ -236,7 +276,7 @@ export default function ChatPage() {
           <div className="flex justify-between items-end">
             <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#111111] flex items-center gap-2">
               <Cpu className="w-4 h-4 text-[#CC0000] animate-spin-slow" style={{ animationDuration: '3s' }} />
-              COMPOSING AUDIT
+              COMPOSING ALIGNMENT CHECK
             </h2>
             <span className="text-[10px] font-mono font-bold text-news-neutral-500">
               {loadingProgress}%
@@ -289,7 +329,7 @@ export default function ChatPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-sm font-extrabold text-[#111111] font-display uppercase tracking-tight">Alignment Audit</h1>
+            <h1 className="text-sm font-extrabold text-[#111111] font-display uppercase tracking-tight">Alignment Check</h1>
             <span className="text-[9px] font-mono uppercase tracking-widest text-news-neutral-500 font-bold">Progress Report // LENS 302</span>
           </div>
         </div>
@@ -421,64 +461,50 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="space-y-3 pt-4">
-            {!progressSaved ? (
-              <button
-                onClick={() => setShowLoginModal(true)}
-                className="w-full py-4 bg-[#111111] hover:bg-[#CC0000] text-[#F9F9F7] font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 outline-none shadow-[2px_2px_0_0_rgba(17,17,17,0.3)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
-              >
-                <BookOpen className="w-4.5 h-4.5" />
-                SECURE ALIGNMENT PROGRESS
-              </button>
-            ) : (
-              <div className="border-2 border-[#111111] p-4 text-center text-emerald-800 bg-emerald-50 font-bold uppercase text-xs tracking-widest">
-                ✓ STANCE HISTORIES RECORDED
+          {/* Action buttons and Profile */}
+          <div className="space-y-4 pt-4">
+            
+            {/* Portable Profile Section */}
+            <div className="border-2 border-[#111111] bg-white p-5 shadow-[4px_4px_0_0_rgba(17,17,17,1)] relative">
+              <div className="absolute top-0 right-0 bg-[#CC0000] text-[#F9F9F7] text-[8px] font-mono font-bold tracking-widest uppercase px-2 py-0.5">
+                PORTABLE PROFILE
               </div>
-            )}
+              
+              <h3 className="text-xs font-bold font-sans uppercase tracking-wider text-[#111111] mb-2 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-[#CC0000]" />
+                YOUR COMPREHENSIVE CONTEXT
+              </h3>
+              
+              {isGeneratingProfile ? (
+                <div className="flex flex-col items-center justify-center p-6 space-y-3">
+                  <div className="w-6 h-6 border border-[#111111] animate-spin-slow bg-news-neutral-100" />
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-news-neutral-500 animate-pulse">
+                    Synthesizing your stances...
+                  </p>
+                </div>
+              ) : portableProfile ? (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-news-neutral-600 leading-normal mb-2">
+                    We've updated your political profile based on your answers. If you are not logged in, copy this text and paste it into the stance box next time to retain your full context.
+                  </p>
+                  <div className="bg-[#111111] text-news-neutral-200 p-3 font-mono text-[10px] leading-relaxed custom-scrollbar max-h-40 overflow-y-auto break-words">
+                    {portableProfile}
+                  </div>
+                  <button
+                    onClick={handleCopy}
+                    className="w-full py-3 bg-[#111111] hover:bg-[#CC0000] text-[#F9F9F7] font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2 outline-none shadow-[2px_2px_0_0_rgba(17,17,17,0.3)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                  >
+                    {copied ? "COPIED SECURELY ✓" : "COPY PORTABLE PROFILE TO CLIPBOARD"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
             <button
               onClick={resetQuiz}
               className="w-full py-4 bg-transparent border-2 border-[#111111] text-[#111111] hover:bg-news-neutral-100 text-xs font-bold uppercase tracking-widest transition-colors outline-none"
             >
-              RESET ALIGNMENT AUDIT
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Editorial OAuth Dialog Sheet */}
-      {showLoginModal && (
-        <div className="fixed inset-0 z-50 bg-[#111111]/70 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-[#F9F9F7] border-4 border-[#111111] p-6 space-y-6 relative shadow-[8px_8px_0_0_rgba(17,17,17,1)]">
-            <div className="text-center space-y-2 border-b border-[#111111] pb-4">
-              <h3 className="text-sm font-extrabold text-[#111111] font-display uppercase tracking-tight">SECURE DATABASE LOG</h3>
-              <p className="text-[10px] text-news-neutral-600 font-body">Save stances securely. Prevents duplicate questions on subsequent ballots.</p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => triggerAuth("google")}
-                className="w-full py-3 bg-white border-2 border-[#111111] text-xs font-bold text-[#111111] hover:bg-[#111111] hover:text-[#F9F9F7] transition-all flex items-center justify-center gap-2 outline-none"
-              >
-                <Chrome className="w-4 h-4 text-rose-600" />
-                CONNECT WITH GOOGLE
-              </button>
-
-              <button
-                onClick={() => triggerAuth("apple")}
-                className="w-full py-3 bg-white border-2 border-[#111111] text-xs font-bold text-[#111111] hover:bg-[#111111] hover:text-[#F9F9F7] transition-all flex items-center justify-center gap-2 outline-none"
-              >
-                <Apple className="w-4 h-4 text-[#111111]" />
-                CONNECT WITH APPLE
-              </button>
-            </div>
-
-            <button
-              onClick={() => setShowLoginModal(false)}
-              className="w-full py-3 bg-transparent border border-dashed border-[#111111] text-xs font-bold text-news-neutral-500 hover:text-[#111111] hover:bg-white transition-colors outline-none"
-            >
-              DISMISS
+              RESET ALIGNMENT CHECK
             </button>
           </div>
         </div>

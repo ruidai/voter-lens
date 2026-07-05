@@ -60,7 +60,6 @@ Required JSON Structure:
             {
               type: "image",
               image: imageBuffer,
-              mimeType: "image/jpeg",
             },
           ],
         },

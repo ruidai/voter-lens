@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "@ai-sdk/google";
-import { generateObject, generateText } from "ai";
+import { generateObject, generateText, streamText } from "ai";
 import { z } from "zod";
 import { createAdminClient } from "../../../utils/supabase/server";
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
           
           let totalCandidates = candidates.length;
           
-          sendEvent({ type: "status", message: "Initializing audit...", progress: 5 });
+          sendEvent({ type: "status", message: "Initializing alignment check...", progress: 5 });
 
           for (let i = 0; i < candidates.length; i++) {
             const candidateName = candidates[i];
@@ -172,7 +172,7 @@ Task:
             };
           });
 
-          sendEvent({ type: "status", message: "Audit prepared.", progress: 100 });
+          sendEvent({ type: "status", message: "Alignment check prepared.", progress: 100 });
           sendEvent({ 
             type: "result", 
             data: {

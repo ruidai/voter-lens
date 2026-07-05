@@ -34,16 +34,16 @@ export default function SignupPage() {
   return (
     <div className="flex-1 flex flex-col justify-between p-6 bg-[#F9F9F7] text-[#111111]">
       <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-5">
-        {/* Newspaper Header */}
+        {/* Newspaper styled Header */}
         <div className="flex flex-col items-center border-b border-[#111111] pb-6 text-center space-y-2">
           <div className="w-12 h-12 border border-[#111111] flex items-center justify-center text-[#111111] bg-white">
             <Vote className="w-6 h-6 text-[#CC0000]" />
           </div>
           <h1 className="text-xl font-extrabold tracking-tight text-[#111111] font-display uppercase">
-            ESTABLISH NEW ACCOUNT
+            REGISTER VOTER LOG
           </h1>
-          <p className="text-[10px] text-news-neutral-500 font-mono uppercase font-bold">
-            Registration Log // Vol 1.06
+          <p className="text-[10px] text-news-neutral-500 font-mono uppercase font-bold px-4">
+            Sign up to securely store and continuously refine your comprehensive political context.
           </p>
         </div>
 
