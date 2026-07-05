@@ -34,7 +34,11 @@ export async function POST(req: NextRequest) {
             candidate: z.string(),
             stance: z.string()
           }))
-        }))
+        })),
+        eliminatedTopics: z.array(z.object({
+          topic: z.string(),
+          reason: z.string()
+        })).optional()
       }),
       messages: [
         {
@@ -46,8 +50,8 @@ The voter described themselves politically as: "${stance || "No statement provid
 Task:
 1. Identify major policy differences and track records for the listed candidates based on public data.
 2. Formulate a list of up to 4 highly distinguishing multiple-choice questions that can separate their platforms.
-3. If the voter provided a political statement, automatically pre-evaluate/filter out questions that their statement already clearly answers, so the quiz is as short as possible.
-4. For each question, indicate which exact option string each candidate aligns with in the 'candidateStancesArr'. Make sure the 'candidate' field exactly matches the names provided.`,
+3. If the voter provided a political statement, automatically pre-evaluate/filter out questions that their statement already clearly answers. For any question/topic you eliminate this way, document it in the 'eliminatedTopics' array (e.g. topic: "Taxes", reason: "Voter already stated support for lower taxes").
+4. For each question generated, indicate which exact option string each candidate aligns with in the 'candidateStancesArr'. Make sure the 'candidate' field exactly matches the names provided.`,
         },
       ],
     });
@@ -67,7 +71,10 @@ Task:
       };
     });
 
-    return NextResponse.json(formattedQuestions);
+    return NextResponse.json({
+      questions: formattedQuestions,
+      eliminatedTopics: object.eliminatedTopics || []
+    });
   } catch (error: any) {
     console.error("Alignment API Error:", error);
     return NextResponse.json(
