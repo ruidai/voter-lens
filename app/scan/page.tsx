@@ -18,6 +18,7 @@ interface ExtractedData {
   candidates?: Array<{ name: string; office: string; details?: string }>;
   propositions?: Array<{ number: string; title: string; summary?: string }>;
   rawOcrSummary?: string;
+  location?: string;
 }
 
 export default function ScanPage() {
@@ -93,6 +94,11 @@ export default function ScanPage() {
     });
 
     localStorage.setItem("voter_lens_candidates", JSON.stringify(newCandidates));
+    
+    if (result.location) {
+      localStorage.setItem("voter_lens_location", result.location);
+    }
+    
     router.push("/dashboard");
   };
 
@@ -237,6 +243,12 @@ export default function ScanPage() {
               <p className="text-xs text-news-neutral-500 italic">No candidates detected in this scan.</p>
             )}
 
+            {result.location && (
+              <div className="text-[10px] text-news-neutral-600 bg-[#E5E5E0]/40 p-2 border-l-2 border-[#111111]">
+                <strong>Location found:</strong> {result.location}
+              </div>
+            )}
+            
             {result.candidates && result.candidates.length > 0 && (
               <button
                 onClick={handleAddCandidates}

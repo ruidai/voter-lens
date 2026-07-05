@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("voter_stance")
+      .select("voter_stance, full_name, email")
       .eq("id", user.id)
       .single();
 

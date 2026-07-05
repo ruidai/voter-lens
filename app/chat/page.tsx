@@ -73,24 +73,25 @@ export default function ChatPage() {
   // No more fake intervals needed. We rely on stream events.
 
   useEffect(() => {
-    const stashedCandidates = localStorage.getItem("voter_lens_candidates");
-    const stashedStance = localStorage.getItem("voter_lens_stance") || "";
-    
-    const candidatesList = stashedCandidates ? JSON.parse(stashedCandidates) : [];
-    setCandidates(candidatesList);
-    setVoterStance(stashedStance);
-
     const fetchQuestions = async () => {
-      try {
-        if (!candidatesList || candidatesList.length === 0) {
-          setLoading(false);
-          return;
-        }
+      const stashedCandidates = localStorage.getItem("voter_lens_candidates");
+      const stashedStance = localStorage.getItem("voter_lens_stance") || "";
+      const stashedLocation = localStorage.getItem("voter_lens_location") || "";
+      
+      const candidatesList = stashedCandidates ? JSON.parse(stashedCandidates) : [];
+      setCandidates(candidatesList);
+      setVoterStance(stashedStance);
 
+      if (candidatesList.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      try {
         const res = await fetch("/api/align", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ candidates: candidatesList, stance: stashedStance })
+          body: JSON.stringify({ candidates: candidatesList, stance: stashedStance, location: stashedLocation })
         });
         
         if (!res.ok) throw new Error("Failed to start alignment check");

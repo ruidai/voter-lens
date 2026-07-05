@@ -21,9 +21,11 @@ export default function DashboardPage() {
   const [stance, setStance] = useState("");
   const [candidateInput, setCandidateInput] = useState("");
   const [candidates, setCandidates] = useState<string[]>([]);
+  const [location, setLocation] = useState("");
 
   // Auth banner state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is logged in by making a request to the profile endpoint
@@ -34,8 +36,13 @@ export default function DashboardPage() {
         if (res.ok) {
           const data = await res.json();
           setIsLoggedIn(true);
-          if (data.profile?.voter_stance) {
-            setStance(data.profile.voter_stance);
+          
+          const profile = data.profile;
+          if (profile) {
+            setUserName(profile.full_name || profile.email || "Reader");
+            if (profile.voter_stance) {
+              setStance(profile.voter_stance);
+            }
           }
         } else {
           setIsLoggedIn(false);
@@ -46,6 +53,19 @@ export default function DashboardPage() {
         setIsLoggedIn(false);
         const savedLocalStance = localStorage.getItem("voter_lens_stance");
         if (savedLocalStance) setStance(savedLocalStance);
+      }
+      
+      const savedLocalLocation = localStorage.getItem("voter_lens_location");
+      if (savedLocalLocation) setLocation(savedLocalLocation);
+
+      const savedLocalCandidates = localStorage.getItem("voter_lens_candidates");
+      if (savedLocalCandidates) {
+        try {
+          const parsed = JSON.parse(savedLocalCandidates);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCandidates(parsed);
+          }
+        } catch (e) {}
       }
     };
     
@@ -128,6 +148,7 @@ export default function DashboardPage() {
   const handleStart = () => {
     localStorage.setItem("voter_lens_candidates", JSON.stringify(candidates));
     localStorage.setItem("voter_lens_stance", stance);
+    localStorage.setItem("voter_lens_location", location);
     router.push("/chat");
   };
 
@@ -203,10 +224,10 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className="text-xs font-bold font-sans uppercase tracking-wider text-[#111111]">
-                  SECURE PROFILE ACTIVE
+                  Logged in as <span className="text-[#CC0000]">{userName}</span>
                 </h3>
                 <p className="text-[10px] text-news-neutral-600 leading-normal font-mono uppercase tracking-wide">
-                  YOUR CONTEXT IS SYNCED
+                  Your profile context is safely synced.
                 </p>
               </div>
             </div>
@@ -222,6 +243,24 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
+
+        {/* Section 1A: Location Input */}
+        <div className="border border-[#111111] p-5 space-y-4">
+          <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#111111] border-b border-[#111111] pb-2">
+            [ GEOGRAPHICAL CONTEXT ]
+          </h2>
+          <p className="text-[10px] text-news-neutral-500 font-mono">
+            Enter zipcode, county, city, or state. This helps us find the right local candidates.
+          </p>
+          <input
+            type="text"
+            placeholder="E.G. 85001, MARICOPA COUNTY, PHOENIX, AZ"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            autoComplete="address-level2"
+            className="w-full px-3 py-3 bg-transparent text-[#111111] border border-[#111111] text-xs font-mono focus:outline-none focus:bg-[#E5E5E0]/40 transition-all uppercase"
+          />
+        </div>
 
         {/* Section 1: Candidates Input */}
         <div className="border border-[#111111] p-5 space-y-4">

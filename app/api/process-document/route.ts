@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { createAdminClient } from "../../../utils/supabase/server";
 
 export const maxDuration = 30; // Extend Vercel function timeout if needed
 
@@ -54,7 +55,8 @@ Required JSON Structure:
       "summary": "A brief summary of what the proposition proposes and its fiscal or local impact"
     }
   ],
-  "rawOcrSummary": "A general summary of what this document is (e.g., A campaign mailer advocating for schools bond funding)"
+  "rawOcrSummary": "A general summary of what this document is (e.g., A campaign mailer advocating for schools bond funding)",
+  "location": "Any geographical context found (e.g., Arizona, Maricopa County, Phoenix, District 12). If none found, omit."
 }`,
             },
             {
@@ -75,6 +77,15 @@ Required JSON Structure:
       .trim();
 
     const parsedData = JSON.parse(cleanJsonText);
+    
+    // Log LLM response
+    const supabase = createAdminClient();
+    await supabase.from("llm_logs").insert({
+      context: "process_document",
+      prompt: "Voter guide parsing assistant prompt (multimodal)",
+      response: cleanJsonText
+    });
+
     return NextResponse.json(parsedData);
   } catch (error: any) {
     console.error("Document process API error:", error);

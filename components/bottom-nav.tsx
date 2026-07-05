@@ -31,7 +31,7 @@ export default function BottomNav() {
     },
     {
       label: "Profile",
-      href: "/login",
+      href: "/profile",
       icon: User,
     },
   ];

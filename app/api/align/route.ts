@@ -10,7 +10,8 @@ const THREE_MONTHS_MS = 90 * 24 * 60 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   try {
-    const { candidates, stance } = await req.json();
+    const body = await req.json();
+    const { candidates, stance, location } = body;
 
     if (!candidates || !Array.isArray(candidates) || candidates.length === 0) {
       return NextResponse.json(
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
             sendEvent({ type: "status", message: `Analyzing ${candidateName}...`, progress: Math.round(progressBase) });
 
             const { data: profiles, error } = await supabase
-              .rpc("match_candidate", { search_name: candidateName, match_threshold: 0.4 });
+              .rpc("match_candidate", { search_name: candidateName, search_location: location || '', match_threshold: 0.4 });
 
             const profile = profiles && profiles.length > 0 ? profiles[0] : null;
             const now = Date.now();
@@ -75,7 +76,8 @@ export async function POST(req: NextRequest) {
               sendEvent({ type: "status", message: `Compiling dossier for ${canonicalName}...`, progress: Math.round(progressBase + 5) });
               sendEvent({ type: "research_start", candidate: canonicalName });
               
-              let researchPrompt = `Research and provide a detailed, highly factual political platform dossier for the candidate: ${canonicalName}. Include their stances on major issues like Economy, Healthcare, Education, and Environment. Ensure the tone is objective and non-partisan.`;
+              let locationContext = location ? ` running in ${location}` : '';
+              let researchPrompt = `Research and provide a detailed, highly factual political platform dossier for the candidate: ${canonicalName}${locationContext}. Include their stances on major issues like Economy, Healthcare, Education, and Environment. Ensure the tone is objective and non-partisan.`;
               if (existingDossier) {
                  researchPrompt = `Here is the existing dossier for the candidate ${canonicalName}: \n\n"${existingDossier}"\n\nResearch and provide an UPDATED dossier. Keep all the accurate historical information, but strictly ADD any new developments or shifts in their platform from the last 3 months.`;
               }
@@ -91,13 +93,20 @@ export async function POST(req: NextRequest) {
                 sendEvent({ type: "research_chunk", chunk });
               }
 
+              await supabase.from("llm_logs").insert({
+                context: "research_candidate",
+                prompt: researchPrompt,
+                response: newDossier
+              });
+
               await supabase
                 .from("candidate_profiles")
                 .upsert({
                   name: canonicalName,
+                  location: location || '',
                   dossier: newDossier,
                   last_updated_at: new Date().toISOString()
-                }, { onConflict: 'name' });
+                }, { onConflict: 'name, location' });
                 
               dossiers[canonicalName] = newDossier;
             } else {
@@ -153,6 +162,12 @@ Task:
 4. For each question generated, indicate which exact option string each candidate aligns with in the 'candidateStancesArr'. Make sure the 'candidate' field exactly matches the names provided.`,
               },
             ],
+          });
+
+          await supabase.from("llm_logs").insert({
+            context: "generate_questions",
+            prompt: `Generating questions for candidates: ${canonicalCandidates.join(", ")}\nVoter stance: ${stance}\nLocation: ${location || 'None'}`,
+            response: JSON.stringify(object)
           });
 
           sendEvent({ type: "research_chunk", chunk: `Generated ${object.questions.length} questions.` });
