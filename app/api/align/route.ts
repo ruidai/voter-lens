@@ -102,14 +102,29 @@ export async function POST(req: NextRequest) {
               sendEvent({ type: "research_start", candidate: canonicalName });
               
               let locationContext = canonicalLocation ? ` running in ${canonicalLocation}` : '';
-              let researchPrompt = `Research and provide a detailed, highly factual political platform dossier for the candidate: ${canonicalName}${locationContext}. Include their stances on major issues like Economy, Healthcare, Education, and Environment. Ensure the tone is objective and non-partisan.`;
+              let researchPrompt = `Research and compile a highly specific, factual political dossier for the candidate: ${canonicalName}${locationContext}. 
+Provide the dossier using the following strict structure:
+
+1. CORE PLATFORM & SPECIFICS: Detail their explicit stances on Economy, Healthcare, Education, and Environment. Cite specific proposals, not generalized values.
+2. TRACK RECORD & PAST ACTIONS: Detail specific past votes, sponsored legislation, or executive actions. If none exist (e.g., first-time candidate), state their professional background relevance.
+3. FUNDING & ENDORSEMENTS: List major PACs, unions, or notable figures funding or endorsing this candidate.
+4. OPPOSING VIEWS & CRITICISMS: Summarize the primary factual criticisms leveled against this candidate by opponents or watchdog groups.
+
+Do not hallucinate. If a section lacks public data, write "Insufficient public data available."`;
               if (existingDossier) {
-                 researchPrompt = `Here is the existing dossier for the candidate ${canonicalName}: \n\n"${existingDossier}"\n\nResearch and provide an UPDATED dossier. Keep all the accurate historical information, but strictly ADD any new developments or shifts in their platform from the last 3 months.`;
+                 researchPrompt = `Here is the existing dossier for the candidate ${canonicalName}: \n\n"${existingDossier}"\n\nResearch and provide an UPDATED dossier following the exact same 4-part structure (Core Platform, Track Record, Funding, Opposing Views). Keep all accurate historical information, but strictly ADD any new developments, votes, or endorsements from the last 3 months. Do not hallucinate.`;
               }
 
               const { textStream } = await streamText({
                 model: google("gemini-3.5-flash"),
                 maxRetries: 3,
+                system: `You are an elite, non-partisan investigative political researcher. 
+Today's date is ${new Date().toLocaleDateString()}. Focus exclusively on current and upcoming elections.
+Your mandate is strictly factual accuracy, high specificity, and deep context.
+Rules:
+1. Do not use generalized political platitudes. 
+2. If specific data (like funding sources or past votes) is unknown, explicitly state "Unknown" or "Insufficient public data available" rather than guessing.
+3. Maintain rigorous neutrality.`,
                 prompt: researchPrompt,
               });
 
