@@ -244,29 +244,11 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Section 1A: Location Input */}
-        <div className="border border-[#111111] p-5 space-y-4">
-          <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#111111] border-b border-[#111111] pb-2">
-            [ GEOGRAPHICAL CONTEXT ]
-          </h2>
-          <p className="text-[10px] text-news-neutral-500 font-mono">
-            Enter zipcode, county, city, or state. This helps us find the right local candidates.
-          </p>
-          <input
-            type="text"
-            placeholder="E.G. 85001, MARICOPA COUNTY, PHOENIX, AZ"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            autoComplete="address-level2"
-            className="w-full px-3 py-3 bg-transparent text-[#111111] border border-[#111111] text-xs font-mono focus:outline-none focus:bg-[#E5E5E0]/40 transition-all uppercase"
-          />
-        </div>
-
-        {/* Section 1: Candidates Input */}
-        <div className="border border-[#111111] p-5 space-y-4">
+        {/* Section A: Target Candidates */}
+        <div className="border border-[#111111] p-5 space-y-6">
           <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#111111] border-b border-[#111111] pb-2 flex items-center justify-between">
             <span>[ SECTION A: TARGET CANDIDATES ]</span>
-            {candidates.length > 0 ? (
+            {candidates.length > 0 && (
               <button
                 type="button"
                 onClick={() => setCandidates([])}
@@ -274,54 +256,88 @@ export default function DashboardPage() {
               >
                 [ Clear All ]
               </button>
-            ) : (
-              <span className="text-news-neutral-500 font-medium">Vol 1.01</span>
             )}
           </h2>
 
-          <button
-            onClick={() => router.push("/scan")}
-            className="w-full py-3 bg-transparent border border-[#111111] text-xs font-bold text-[#111111] hover:bg-[#111111] hover:text-[#F9F9F7] transition-all flex items-center justify-center gap-2"
-          >
-            <Camera className="w-4 h-4 text-[#CC0000]" />
-            SCAN VOTER BALLOT OR MAILER
-          </button>
-
-          <form onSubmit={addCandidate} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="TYPE CANDIDATE (E.G. JANE DOE)"
-              value={candidateInput}
-              onChange={(e) => setCandidateInput(e.target.value)}
-              onPaste={handlePaste}
-              className="flex-1 px-3 py-2 bg-transparent text-[#111111] border border-[#111111] text-xs font-mono focus:outline-none focus:bg-[#E5E5E0]/40 transition-all uppercase"
-            />
+          {/* Option 1 */}
+          <div className="space-y-2">
+            <h3 className="text-[10px] font-bold font-sans uppercase tracking-wider text-[#111111]">
+              Option 1: Scan Voter Ballot
+            </h3>
+            <p className="text-[10px] text-news-neutral-600 leading-normal font-mono">
+              Use your camera to scan a ballot or flyer. We will automatically extract candidates and your geographical context.
+            </p>
             <button
-              type="submit"
-              className="w-10 h-10 bg-[#111111] text-[#F9F9F7] hover:bg-[#CC0000] flex items-center justify-center transition-colors"
+              onClick={() => router.push("/scan")}
+              className="w-full py-3 bg-transparent border border-[#111111] text-xs font-bold text-[#111111] hover:bg-[#111111] hover:text-[#F9F9F7] transition-all flex items-center justify-center gap-2"
             >
-              <Plus className="w-4.5 h-4.5" />
+              <Camera className="w-4 h-4 text-[#CC0000]" />
+              SCAN VOTER BALLOT OR MAILER
             </button>
-          </form>
+          </div>
 
-          {/* Candidate list */}
-          <div className="flex flex-wrap gap-2 pt-1.5">
-            {candidates.map((name) => (
-              <div 
-                key={name}
-                className="px-2.5 py-1.5 border border-[#111111] bg-white text-xs font-bold text-[#111111] flex items-center gap-1.5"
-              >
-                <span className="font-sans uppercase text-[10px] tracking-wider">{name}</span>
-                <button 
-                  onClick={() => removeCandidate(name)}
-                  className="text-news-neutral-500 hover:text-[#CC0000] p-0.5"
+          <div className="flex items-center gap-3 py-2">
+             <div className="h-px bg-news-neutral-300 flex-1"></div>
+             <span className="text-[10px] font-mono text-news-neutral-500 font-bold">OR</span>
+             <div className="h-px bg-news-neutral-300 flex-1"></div>
+          </div>
+
+          {/* Option 2 */}
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-bold font-sans uppercase tracking-wider text-[#111111]">
+              Option 2: Enter Manually
+            </h3>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] text-news-neutral-600 font-mono font-bold">Geographical Context</label>
+              <input
+                type="text"
+                placeholder="E.G. 85001, MARICOPA COUNTY, PHOENIX, AZ"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                autoComplete="address-level2"
+                className="w-full px-3 py-2 bg-transparent text-[#111111] border border-[#111111] text-xs font-mono focus:outline-none focus:bg-[#E5E5E0]/40 transition-all uppercase"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-news-neutral-600 font-mono font-bold">Candidate Names (Paste list to auto-chunk)</label>
+              <form onSubmit={addCandidate} className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="TYPE CANDIDATE (E.G. JANE DOE)"
+                  value={candidateInput}
+                  onChange={(e) => setCandidateInput(e.target.value)}
+                  onPaste={handlePaste}
+                  className="flex-1 px-3 py-2 bg-transparent text-[#111111] border border-[#111111] text-xs font-mono focus:outline-none focus:bg-[#E5E5E0]/40 transition-all uppercase"
+                />
+                <button
+                  type="submit"
+                  className="w-10 h-10 bg-[#111111] text-[#F9F9F7] hover:bg-[#CC0000] flex items-center justify-center transition-colors"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <Plus className="w-4.5 h-4.5" />
                 </button>
+              </form>
+            </div>
+
+            {/* Candidate list */}
+            {candidates.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1.5">
+                {candidates.map((name) => (
+                  <div 
+                    key={name}
+                    className="px-2.5 py-1.5 border border-[#111111] bg-white text-xs font-bold text-[#111111] flex items-center gap-1.5"
+                  >
+                    <span className="font-sans uppercase text-[10px] tracking-wider">{name}</span>
+                    <button 
+                      onClick={() => removeCandidate(name)}
+                      className="text-news-neutral-500 hover:text-[#CC0000] p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-            {candidates.length === 0 && (
-              <p className="text-[11px] text-news-neutral-500 italic">No candidates selected. Type or scan a ballot.</p>
             )}
           </div>
         </div>

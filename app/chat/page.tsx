@@ -15,7 +15,8 @@ import {
   Filter,
   Activity,
   Cpu,
-  TerminalSquare
+  TerminalSquare,
+  AlertTriangle
 } from "lucide-react";
 
 interface Question {
@@ -69,6 +70,7 @@ export default function ChatPage() {
   const [portableProfile, setPortableProfile] = useState<string | null>(null);
   const [isGeneratingProfile, setIsGeneratingProfile] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [fatalError, setFatalError] = useState<string | null>(null);
 
   // No more fake intervals needed. We rely on stream events.
 
@@ -136,7 +138,10 @@ export default function ChatPage() {
                     setLoading(false);
                   }, 800);
                 } else if (event.type === "error") {
-                  throw new Error(event.message);
+                  setFatalError(event.message);
+                  setLoading(false);
+                  done = true;
+                  break;
                 }
               } catch (e) {
                 console.error("Error parsing stream part", part, e);
@@ -264,6 +269,41 @@ export default function ChatPage() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  if (fatalError) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#F9F9F7] text-[#111111] p-6 space-y-8 min-h-screen pb-32">
+        <div className="w-16 h-16 border-2 border-[#111111] relative flex items-center justify-center bg-white shadow-[4px_4px_0_0_rgba(17,17,17,1)] overflow-hidden">
+          <AlertTriangle className="w-8 h-8 text-[#CC0000]" />
+        </div>
+        
+        <div className="w-full max-w-sm space-y-4">
+          <div className="border border-[#111111] bg-white p-5 shadow-[4px_4px_0_0_rgba(17,17,17,1)] relative">
+            <div className="absolute top-0 right-0 bg-[#CC0000] text-[#F9F9F7] text-[8px] font-mono font-bold tracking-widest uppercase px-2 py-0.5">
+              PRESS HALTED
+            </div>
+            
+            <h2 className="text-xs font-bold font-sans uppercase tracking-wider text-[#111111] mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-[#CC0000]" />
+              EDITORIAL EXCEPTION
+            </h2>
+            
+            <p className="text-[11px] text-news-neutral-600 leading-normal mb-3 font-body">
+              {fatalError}
+            </p>
+          </div>
+
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="w-full py-4 bg-[#111111] text-[#F9F9F7] text-xs font-bold uppercase tracking-widest hover:bg-[#CC0000] transition-colors flex items-center justify-center gap-2 mt-4 shadow-[4px_4px_0_0_rgba(204,0,0,0.3)]"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            RETURN TO DASHBOARD
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

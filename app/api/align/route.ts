@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
             try {
               const { object } = await generateObject({
                 model: google("gemini-1.5-flash"),
+                maxRetries: 3,
                 schema: z.object({
                   resolvedLocation: z.string().describe("The standardized geographic format like 'County, State' or 'City, State' or 'State' or empty string if invalid.")
                 }),
@@ -108,6 +109,7 @@ export async function POST(req: NextRequest) {
 
               const { textStream } = await streamText({
                 model: google("gemini-3.5-flash"),
+                maxRetries: 3,
                 prompt: researchPrompt,
               });
 
@@ -154,6 +156,7 @@ export async function POST(req: NextRequest) {
 
           const { object } = await generateObject({
             model: google("gemini-3.5-flash"),
+            maxRetries: 3,
             schema: z.object({
               questions: z.array(z.object({
                 id: z.string(),
@@ -223,7 +226,15 @@ Task:
           controller.close();
         } catch (err: any) {
           console.error(err);
-          sendEvent({ type: "error", message: err.message || "An error occurred" });
+          let cleanMessage = "An unexpected error occurred during processing.";
+          if (err?.message?.includes("429")) {
+            cleanMessage = "We are currently experiencing high traffic (Rate Limit Exceeded). Please try again in a few moments.";
+          } else if (err?.message?.includes("503")) {
+            cleanMessage = "The AI service is temporarily unavailable. Please try again.";
+          } else if (err?.message) {
+            cleanMessage = err.message;
+          }
+          sendEvent({ type: "error", message: cleanMessage });
           controller.close();
         }
       }

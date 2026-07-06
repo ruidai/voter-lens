@@ -22,8 +22,8 @@ export function createAdminClient() {
   });
 }
 
-export function createServer() {
-  const cookieStore = cookies();
+export async function createServer() {
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
