@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     // Execute multimodal parsing request using Vercel AI SDK and Gemini 1.5 Flash
     const { text } = await generateText({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-3.1-flash-lite"),
       messages: [
         {
           role: "user",

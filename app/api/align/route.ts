@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
             sendEvent({ type: "status", message: "Resolving geographic context...", progress: 6 });
             try {
               const { object } = await generateObject({
-                model: google("gemini-1.5-flash"),
+                model: google("gemini-3.1-flash-lite"),
                 maxRetries: 3,
                 schema: z.object({
                   resolvedLocation: z.string().describe("The standardized geographic format like 'County, State' or 'City, State' or 'State' or empty string if invalid.")
