@@ -47,23 +47,39 @@ export async function POST(req: NextRequest) {
           if (location) {
             sendEvent({ type: "status", message: "Resolving geographic context...", progress: 6 });
             try {
-              const { object } = await generateObject({
-                // @ts-expect-error - useSearchGrounding is supported but not typed in this version
-                model: google("gemini-3.1-flash-lite", { useSearchGrounding: true }),
-                maxRetries: 3,
-                schema: z.object({
-                  resolvedLocation: z.string().describe("The standardized geographic format like 'County, State' or 'City, State' or 'State' or empty string if invalid.")
-                }),
-                prompt: `Standardize this location input into a canonical geographic format (e.g., 'County, State', 'City, State', or 'State'). If it is a zip code, resolve it to its county and state. If blank or nonsensical, return empty string.\n\nUser Input: ${location}`
-              });
-              
-              canonicalLocation = object.resolvedLocation;
-              
-              await supabase.from("llm_logs").insert({
-                context: "entity_resolution_location",
-                prompt: `Resolve location: ${location}`,
-                response: canonicalLocation
-              });
+              // Check memory (llm_logs) to avoid wasting LLM calls
+              const { data: cacheHits, error: cacheError } = await supabase
+                .from("llm_logs")
+                .select("response")
+                .eq("context", "entity_resolution_location")
+                .eq("prompt", `Resolve location: ${location}`)
+                .order("created_at", { ascending: false })
+                .limit(1);
+
+              if (cacheHits && cacheHits.length > 0) {
+                canonicalLocation = cacheHits[0].response;
+              } else {
+                const { object } = await generateObject({
+                  // @ts-expect-error - useSearchGrounding is supported but not typed in this version
+                  model: google("gemini-3.1-flash-lite", { useSearchGrounding: true }),
+                  maxRetries: 3,
+                  schema: z.object({
+                    city: z.string().nullable().describe("The city name, if applicable."),
+                    county: z.string().nullable().describe("The county name, if applicable."),
+                    state: z.string().nullable().describe("The state abbreviation (e.g., AZ)."),
+                    formattedString: z.string().describe("A descriptive string including all extracted geographic levels (e.g., 'City, County, State' or 'County, State'). Empty string if invalid.")
+                  }),
+                  prompt: `Analyze this location input and extract its multiple geographic levels (city, county, and state). Produce a 'formattedString' that combines all known levels to provide maximum disambiguation context for candidate research. If the input is a zip code, resolve its corresponding city, county, and state. If the input is nonsensical or empty, return an empty formattedString.\n\nUser Input: ${location}`
+                });
+                
+                canonicalLocation = object.formattedString;
+                
+                await supabase.from("llm_logs").insert({
+                  context: "entity_resolution_location",
+                  prompt: `Resolve location: ${location}`,
+                  response: canonicalLocation
+                });
+              }
             } catch (e) {
               console.error("Entity resolution failed", e);
             }
