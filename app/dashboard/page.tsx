@@ -35,14 +35,18 @@ export default function DashboardPage() {
         const res = await fetch("/api/profile");
         if (res.ok) {
           const data = await res.json();
-          setIsLoggedIn(true);
-          
           const profile = data.profile;
+          
           if (profile) {
+            setIsLoggedIn(true);
             setUserName(profile.full_name || profile.email || "Reader");
             if (profile.voter_stance) {
               setStance(profile.voter_stance);
             }
+          } else {
+            setIsLoggedIn(false);
+            const savedLocalStance = localStorage.getItem("voter_lens_stance");
+            if (savedLocalStance) setStance(savedLocalStance);
           }
         } else {
           setIsLoggedIn(false);

@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ profile: null }, { status: 200 });
     }
 
     const { data: profile, error } = await supabase

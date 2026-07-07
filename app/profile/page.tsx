@@ -15,13 +15,16 @@ export default function ProfilePage() {
         const res = await fetch("/api/profile");
         if (res.ok) {
           const data = await res.json();
-          setIsLoggedIn(true);
           const profile = data.profile;
           if (profile) {
+            setIsLoggedIn(true);
             setDisplayName(profile.full_name || profile.email || "Valued Reader");
             if (profile.voter_stance) {
               setStance(profile.voter_stance);
             }
+          } else {
+            setIsLoggedIn(false);
+            setStance(localStorage.getItem("voter_lens_stance"));
           }
         } else {
           setIsLoggedIn(false);
