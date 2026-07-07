@@ -60,8 +60,7 @@ export async function POST(req: NextRequest) {
                 canonicalLocation = cacheHits[0].response;
               } else {
                 const { object } = await generateObject({
-                  // @ts-expect-error - useSearchGrounding is supported but not typed in this version
-                  model: google("gemini-3.1-flash-lite", { useSearchGrounding: true }),
+                  model: google("gemini-3.1-flash-lite"),
                   maxRetries: 3,
                   schema: z.object({
                     city: z.string().nullable().describe("The city name, if applicable."),
@@ -136,6 +135,7 @@ Do not hallucinate. If a section lacks public data, write "Insufficient public d
                 // @ts-expect-error - useSearchGrounding is supported but not typed in this version
                 model: google("gemini-3.5-flash", { useSearchGrounding: true }),
                 maxRetries: 3,
+                maxTokens: 800,
                 system: `You are an elite, non-partisan investigative political researcher. 
 Today's date is ${new Date().toLocaleDateString()}. Focus exclusively on current and upcoming elections.
 Your mandate is strictly factual accuracy, high specificity, and deep context.
@@ -199,39 +199,59 @@ Task:
 3. If the voter provided a political statement, automatically pre-evaluate/filter out questions that their statement already clearly answers. For any question/topic you eliminate this way, document it in the 'eliminatedTopics' array (e.g. topic: "Taxes", reason: "Voter already stated support for lower taxes").
 4. For each question generated, indicate which exact option string each candidate aligns with in the 'candidateStancesArr'. Make sure the 'candidate' field exactly matches the names provided.`;
 
-          const { object } = await generateObject({
-            // @ts-expect-error - useSearchGrounding is supported but not typed in this version
-            model: google("gemini-3.5-flash", { useSearchGrounding: true }),
-            maxRetries: 3,
-            schema: z.object({
-              questions: z.array(z.object({
-                id: z.string(),
-                category: z.string(),
-                text: z.string(),
-                options: z.array(z.string()),
-                candidateStancesArr: z.array(z.object({
-                  candidate: z.string(),
-                  stance: z.string()
-                }))
-              })),
-              eliminatedTopics: z.array(z.object({
-                topic: z.string(),
-                reason: z.string()
-              })).optional()
-            }),
-            messages: [
-              {
-                role: "user",
-                content: generateQuestionsPrompt,
-              },
-            ],
-          });
+          // Check if we already generated questions for this exact set of candidates and stances
+          const { data: qCacheHits } = await supabase
+            .from("llm_logs")
+            .select("response")
+            .eq("context", "generate_questions")
+            .eq("prompt", generateQuestionsPrompt)
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-          await supabase.from("llm_logs").insert({
-            context: "generate_questions",
-            prompt: generateQuestionsPrompt,
-            response: JSON.stringify(object)
-          });
+          let object: any;
+          if (qCacheHits && qCacheHits.length > 0) {
+            try {
+              object = JSON.parse(qCacheHits[0].response);
+            } catch (e) {
+              console.error("Failed to parse cached questions", e);
+            }
+          }
+
+          if (!object) {
+            const result = await generateObject({
+              model: google("gemini-3.1-flash-lite"),
+              maxRetries: 3,
+              schema: z.object({
+                questions: z.array(z.object({
+                  id: z.string(),
+                  category: z.string(),
+                  text: z.string(),
+                  options: z.array(z.string()),
+                  candidateStancesArr: z.array(z.object({
+                    candidate: z.string(),
+                    stance: z.string()
+                  }))
+                })),
+                eliminatedTopics: z.array(z.object({
+                  topic: z.string(),
+                  reason: z.string()
+                })).optional()
+              }),
+              messages: [
+                {
+                  role: "user",
+                  content: generateQuestionsPrompt,
+                },
+              ],
+            });
+            object = result.object;
+
+            await supabase.from("llm_logs").insert({
+              context: "generate_questions",
+              prompt: generateQuestionsPrompt,
+              response: JSON.stringify(object)
+            });
+          }
 
           sendEvent({ type: "research_chunk", chunk: `Generated ${object.questions.length} questions.` });
           await new Promise(r => setTimeout(r, 600));

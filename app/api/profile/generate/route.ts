@@ -46,7 +46,7 @@ Please generate a SINGLE, cohesive paragraph (written in the first person, e.g.,
 This paragraph will act as their "Portable Profile". Do not include any introductory text, just the paragraph itself. Make it factual and direct.`;
 
     const { text: newStance } = await generateText({
-      model: google("gemini-3.5-flash"),
+      model: google("gemini-3.1-flash-lite"),
       prompt: prompt,
     });
 
