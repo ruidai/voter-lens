@@ -84,11 +84,9 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          for (let i = 0; i < candidates.length; i++) {
-            const candidateName = candidates[i];
-            const progressBase = 5 + (i / totalCandidates) * 60; // 5% to 65% for research
-            sendEvent({ type: "status", message: `Analyzing ${candidateName}...`, progress: Math.round(progressBase) });
+          sendEvent({ type: "status", message: "Analyzing candidates in parallel...", progress: 10 });
 
+          const candidatePromises = candidates.map(async (candidateName) => {
             const { data: profiles, error } = await supabase
               .rpc("match_candidate", { search_name: candidateName, search_location: canonicalLocation, match_threshold: 0.4 });
 
@@ -97,7 +95,6 @@ export async function POST(req: NextRequest) {
             let needsResearch = false;
             let existingDossier = "";
             const canonicalName = profile ? profile.name : candidateName;
-            canonicalCandidates.push(canonicalName);
 
             if (error && error.code !== 'PGRST116') {
               console.error(`Error querying cache for ${candidateName}:`, error);
@@ -114,9 +111,6 @@ export async function POST(req: NextRequest) {
             }
 
             if (needsResearch) {
-              sendEvent({ type: "status", message: `Compiling dossier for ${canonicalName}...`, progress: Math.round(progressBase + 5) });
-              sendEvent({ type: "research_start", candidate: canonicalName });
-              
               let locationContext = canonicalLocation ? ` running in ${canonicalLocation}` : '';
               let researchPrompt = `Research and compile a highly specific, factual political dossier for the candidate: ${canonicalName}${locationContext}. 
 Provide the dossier using the following strict structure:
@@ -131,11 +125,11 @@ Do not hallucinate. If a section lacks public data, write "Insufficient public d
                  researchPrompt = `Here is the existing dossier for the candidate ${canonicalName}: \n\n"${existingDossier}"\n\nResearch and provide an UPDATED dossier following the exact same 4-part structure (Core Platform, Track Record, Funding, Opposing Views). Keep all accurate historical information, but strictly ADD any new developments, votes, or endorsements from the last 3 months. Do not hallucinate.`;
               }
 
-              const { textStream } = await streamText({
+              const { text } = await generateText({
                 // @ts-expect-error - useSearchGrounding is supported but not typed in this version
                 model: google("gemini-3.5-flash", { useSearchGrounding: true }),
                 maxRetries: 3,
-                maxTokens: 800,
+                maxTokens: 4000,
                 system: `You are an elite, non-partisan investigative political researcher. 
 Today's date is ${new Date().toLocaleDateString()}. Focus exclusively on current and upcoming elections.
 Your mandate is strictly factual accuracy, high specificity, and deep context.
@@ -146,31 +140,45 @@ Rules:
                 prompt: researchPrompt,
               });
 
-              let newDossier = "";
-              for await (const chunk of textStream) {
-                newDossier += chunk;
-                sendEvent({ type: "research_chunk", chunk });
+              return { candidateName, canonicalName, dossier: text, isNew: true, researchPrompt };
+            } else {
+              return { candidateName, canonicalName, dossier: existingDossier, isNew: false, researchPrompt: null };
+            }
+          });
+
+          const results = await Promise.all(candidatePromises);
+
+          for (let i = 0; i < results.length; i++) {
+            const res = results[i];
+            canonicalCandidates.push(res.canonicalName);
+            dossiers[res.canonicalName] = res.dossier;
+            const progressBase = 5 + (i / totalCandidates) * 60;
+            sendEvent({ type: "status", message: `Compiling dossier for ${res.canonicalName}...`, progress: Math.round(progressBase) });
+
+            sendEvent({ type: "research_start", candidate: res.canonicalName });
+            
+            if (res.isNew) {
+              const chunkSize = 40;
+              for (let j = 0; j < res.dossier.length; j += chunkSize) {
+                sendEvent({ type: "research_chunk", chunk: res.dossier.slice(j, j + chunkSize) });
+                await new Promise(r => setTimeout(r, 10));
               }
 
               await supabase.from("llm_logs").insert({
                 context: "research_candidate",
-                prompt: researchPrompt,
-                response: newDossier
+                prompt: res.researchPrompt,
+                response: res.dossier
               });
 
               await supabase
                 .from("candidate_profiles")
                 .upsert({
-                  name: canonicalName,
+                  name: res.canonicalName,
                   location: canonicalLocation,
-                  dossier: newDossier,
+                  dossier: res.dossier,
                   last_updated_at: new Date().toISOString()
                 }, { onConflict: 'name, location' });
-                
-              dossiers[canonicalName] = newDossier;
             } else {
-              dossiers[canonicalName] = existingDossier;
-              sendEvent({ type: "research_start", candidate: canonicalName });
               sendEvent({ type: "research_chunk", chunk: "Found existing dossier in secure database. Skipping active research.\n" });
               await new Promise(r => setTimeout(r, 800));
             }

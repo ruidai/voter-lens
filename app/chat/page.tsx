@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Sparkles, 
@@ -74,7 +74,12 @@ export default function ChatPage() {
 
   // No more fake intervals needed. We rely on stream events.
 
+  const hasFetched = useRef(false);
+
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
     const fetchQuestions = async () => {
       const stashedCandidates = localStorage.getItem("voter_lens_candidates");
       const stashedStance = localStorage.getItem("voter_lens_stance") || "";
