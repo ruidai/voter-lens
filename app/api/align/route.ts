@@ -264,9 +264,9 @@ Task:
           sendEvent({ type: "research_chunk", chunk: `Generated ${object.questions.length} questions.` });
           await new Promise(r => setTimeout(r, 600));
 
-          const formattedQuestions = object.questions.map(q => {
+          const formattedQuestions = object.questions.map((q: any) => {
             const stancesRecord: Record<string, string> = {};
-            q.candidateStancesArr.forEach(c => {
+            q.candidateStancesArr.forEach((c: any) => {
               stancesRecord[c.candidate] = c.stance;
             });
             return {
